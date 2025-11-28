@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>RIZITOX AI</title>
+  <style>
+    body {
+      background: #0e0e0e;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      text-align: center;
+      padding: 20px;
+      background: #7d3ac1;
+      font-size: 25px;
+      font-weight: bold;
+      box-shadow: 0 0 15px #7d3ac1;
+    }
+    #chat {
+      padding: 10px;
+      max-width: 700px;
+      margin: auto;
+      margin-top: 10px;
+      height: 65vh;
+      overflow-y: auto;
+    }
+    .msg {
+      padding: 12px;
+      background: #222;
+      margin: 10px 0;
+      border-radius: 10px;
+      line-height: 1.6;
+      word-wrap: break-word;
+    }
+    .you { background: #7d3ac1; text-align: right; }
+    .ai { background: #333; text-align: left; }
+    #inputs {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: #111;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 -5px 10px #000;
+      flex-wrap: wrap;
+    }
+    input { width: 50%; padding: 15px; border-radius: 10px; border: none; outline: none; background: #222; color: white; font-size: 16px; }
+    button {
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:active { opacity: 0.7; }
+    #sendBtn { background: #7d3ac1; }
+    #clearBtn { background: #c13a3a; }
+    #modeBtn { background: #3ac17d; }
+  </style>
+</head>
+<body>
+
+<header>🤖 RIZITOX AI</header>
+
+<div id="chat"></div>
+
+<div id="inputs">
+  <input id="msg" placeholder="اكتب رسالتك هنا...">
+  <button id="sendBtn" onclick="sendMessage()">إرسال</button>
+  <button id="clearBtn" onclick="clearChat()">مسح الشات</button>
+  <button id="modeBtn" onclick="changeMode()">الوضع: كلاهما</button>
+</div>
+
+<script>
+const API_KEY = "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"; // بدّل sk-XXXX بالمفتاح ديالك
+let mode = "both"; // القيم الممكنة: "text", "voice", "both"
+
+function changeMode() {
+  if(mode === "both") { mode = "text"; document.getElementById("modeBtn").innerText = "الوضع: كتابة فقط"; }
+  else if(mode === "text") { mode = "voice"; document.getElementById("modeBtn").innerText = "الوضع: صوت فقط"; }
+  else { mode = "both"; document.getElementById("modeBtn").innerText = "الوضع: كلاهما"; }
+}
+
+async function sendMessage() {
+  let box = document.getElementById("msg");
+  let text = box.value.trim();
+  if(text === "") return;
+  box.value = "";
+
+  const chat = document.getElementById("chat");
+  if(mode !== "voice") chat.innerHTML += `<div class="msg you">🧑‍💻 أنت: ${text}</div>`;
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    let response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + API_KEY
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: text }]
+      })
+    });
+
+    let data = await response.json();
+    let reply = data.choices?.[0]?.message?.content || "❌ خطأ فالإجابة!";
+
+    if(mode !== "voice") chat.innerHTML += `<div class="msg ai">🤖 AI: ${reply}</div>`;
+    chat.scrollTop = chat.scrollHeight;
+
+    if((mode === "voice" || mode === "both") && 'speechSynthesis' in window) {
+      let utterance = new SpeechSynthesisUtterance(reply);
+      utterance.lang = "ar-SA";
+      speechSynthesis.speak(utterance);
+    }
+
+  } catch (error) {
+    chat.innerHTML += `<div class="msg ai">❌ خطأ فالاتصال!</div>`;
+    chat.scrollTop = chat.scrollHeight;
+  }
+}
+
+function clearChat() { document.getElementById("chat").innerHTML = ""; }
+</script>
+
+</body>
+</html>
